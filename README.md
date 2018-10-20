@@ -9,6 +9,8 @@ This script converts the data in that file to JSON format, for ease of browsing.
 
 ### How to run?
 
+Python 3.6.4
+
 `python clippings.py [<filename>]`
 
 The default is "My Clippings.txt"
