@@ -8,10 +8,22 @@ from time import strptime
 from datetime import datetime
 
 
-def do_clippings(f_in,f_out="out/clippings.json"):
+def do_clippings():
     """
         Wrapper
     """
+    
+    if len(sys.argv) > 1:
+        f_in = sys.argv[1]          # clippings filename (should be .txt)
+        if len(sys.argv) > 2:
+            f_out = sys.argv[2]     # output filename (should be .json)
+        else:
+            f_out="out/clippings.json"
+    else:
+        f_in = "in/My Clippings.txt"    # default
+        f_out="out/clippings.json"       # default
+    
+    print("Extracting clippings from "+f_in)
     
     with open(f_in,"r",encoding='utf-8') as f:
         raw = f.read()
@@ -115,6 +127,7 @@ def build_regexes():
     
     return regex_author_str,regex_noauthor_str
 
+
 def output(dict_all,f_out=None):
     """
         Print or file write
@@ -140,9 +153,9 @@ def organise(dict):
                         <loc or page>,
                         <??>,
                         <??>,
-                        <day>,
-                        <month>,
-                        <date>,
+                        <day name>,
+                        <month name>,
+                        <day number>,
                         <year>,
                         <hour>,
                         <minute>,
@@ -158,9 +171,9 @@ def organise(dict):
                         <loc or page>,
                         <??>,
                         <??>,
-                        <day>,
-                        <month>,
-                        <date>,
+                        <day name>,
+                        <month name>,
+                        <day number>,
                         <year>,
                         <hour>,
                         <minute>,
@@ -173,9 +186,14 @@ def organise(dict):
         I want something like this:
             {
                 notes_author:   {
-                    "Daniel C. Dennett":  {
-                        "From Bacteria to Bach and Back":   {
-                            
+                    "Kate Chopin": {
+                        "The Awakening and Selected Short Stories": {
+                            "l1197": [
+                                {
+                                    "date": "20180405-1257",
+                                    "quote": "She had reached a stage when she seemed to be no longer feeling her way, working, when in the humor, with sureness and ease. And being devoid of ambition, and striving not toward accomplishment, she drew satisfaction from the work in itself."
+                                }
+                            ]
                         }
                     }
                 }
@@ -194,7 +212,7 @@ def organise(dict):
     ## 2. Quotes with no author
     ## TODO
     for line in dict["notes_noauthor"]:
-        print(line) # debug
+        #print(line) # debug
         break
     
     return dict_new
@@ -220,9 +238,14 @@ def build_dict_line(line):
             13 <quote>
         New format:
             {
-                "Daniel C. Dennett":  {
-                    "From Bacteria to Bach and Back":   {
-                        33
+                "Ursula K. Le Guin":  {
+                    "Tales from Earthsea":   {
+                        "l1321": [
+                            {
+                                "date": "20170618-1726",
+                                "quote": "The wizard kept the name Roke in his memory, and when he heard it again, and in the same connection, he knew Hound had been on a true track again."
+                            }
+                        ],
                     }
                 }
             }
@@ -292,7 +315,7 @@ def add_line_to_dict_deep(dict,line):
                 },
             ...
             }
-        So we need to check the title and location to make sure it's not overwritten
+        So we need to check the title and location to make sure it's not overwritten.
     """
     
     ## 1. Initialise
@@ -323,12 +346,4 @@ def add_line_to_dict_deep(dict,line):
 
 
 if __name__ == "__main__":
-    
-    if len(sys.argv) > 1:
-        f_in = sys.argv[1]          # clippings filename (should be .txt)
-    else:
-        f_in = "in/My Clippings.txt"   # default
-    
-    print("Extracting clippings from "+f_in)
-    
-    do_clippings(f_in)
+    do_clippings()
