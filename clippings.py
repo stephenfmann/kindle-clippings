@@ -118,22 +118,20 @@ def organise(dict):
             }
         I want something like this:
             {
-                notes_author:   {
-                    "Kate Chopin": {
-                        "The Awakening and Selected Short Stories": {
-                            "l1197": [
-                                {
-                                    "date": "20180405-1257",
-                                    "quote": "She had reached a stage when she seemed to be no longer feeling her way, working, when in the humor, with sureness and ease. And being devoid of ambition, and striving not toward accomplishment, she drew satisfaction from the work in itself."
-                                }
-                            ]
-                        }
+                "Kate Chopin": {
+                    "The Awakening and Selected Short Stories": {
+                        "l1197": [
+                            {
+                                "date": "20180405-1257",
+                                "quote": "She had reached a stage when she seemed to be no longer feeling her way, working, when in the humor, with sureness and ease. And being devoid of ambition, and striving not toward accomplishment, she drew satisfaction from the work in itself."
+                            }
+                        ]
                     }
                 }
             }
     """
     
-    dict_new = {"notes_author":{}}
+    dict_new = {}
     
     ## 1. Quotes with an author
     i=0
@@ -340,7 +338,7 @@ def build_dict_line(line):
 def add_line_to_dict_deep(dict,line):
     """
         The dict looks like:
-            "notes_author": {
+            {
                 "John Updike": {
                     "Rabbit, Run": {
                         "l4467": [{
@@ -361,24 +359,24 @@ def add_line_to_dict_deep(dict,line):
     location    = list(line[author][title].keys())[0]
     
     
-    if author not in dict["notes_author"]:
+    if author not in dict:
         ## 2. Author not yet added.
-        dict["notes_author"].update(line)
+        dict.update(line)
         return dict
     
-    if title not in dict["notes_author"][author]:
+    if title not in dict[author]:
         ## 3. Title not yet added.
-        dict["notes_author"][author].update(line[author])
+        dict[author].update(line[author])
         return dict
         
-    if location not in dict["notes_author"][author][title]:
+    if location not in dict[author][title]:
         ## 4. Location not yet added. 
-        dict["notes_author"][author][title].update(line[author][title])
+        dict[author][title].update(line[author][title])
         return dict
     
     ## 5. The location is already there (should be impossible for Locs, rare for Pages)
     ## Just need to add the entry
-    dict["notes_author"][author][title][location] += line[author][title][location]
+    dict[author][title][location] += line[author][title][location]
     return dict
 
 
@@ -392,7 +390,7 @@ def pad_location_keys(dict_new):
          with leading zeros after the initial letter.
     """
     
-    for books in dict_new["notes_author"].values():
+    for books in dict_new.values():
         for key,book in books.items():
             loc_length = longest_loc_length(book)
             book_new = pad_locs(book,loc_length)
