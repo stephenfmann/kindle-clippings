@@ -55,5 +55,6 @@ My kindle is *old*. It sometimes doesn't connect to my computer for long enough 
 
 ## TODO
 
++ unicode characters in quotes
 + Pages in order with respect to single/double/triple digits
 + notes_noauthor info
