@@ -19,7 +19,7 @@ Output file is in the format:
 
 ```json
 {
-    notes_author": {
+    "notes_author": {
         "<author>": {
             "<title>" {
                 "<location/page>" : [
@@ -31,7 +31,7 @@ Output file is in the format:
             }
         }
     }
-    notes_noauthor": {
+    "notes_noauthor": {
         "<title>" {
             "<location/page>" : [
                 {
