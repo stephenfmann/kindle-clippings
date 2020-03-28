@@ -21,6 +21,35 @@ def do_clippings(f_in,f_out="out/clippings.json"):
     output(dict_all,f_out)
 
 
+def parse_raw(raw):
+    """
+        Convert Kindle clippings text file to JSON and print to JSON file
+    """
+    
+    ## 1. Preprocessing e.g. byte order mark
+    raw = preprocess(raw)
+    
+    ## 2. Get regular expressions
+    regex_author_str, regex_noauthor_str = build_regexes()
+    
+    ## 3. Perform the regex for entries with an author
+    regex_author = re.compile(regex_author_str)
+    dict_author = {"notes_author":regex_author.findall(raw)}
+    
+    ## 4. Perform the regex for entries without an author
+    regex_noauthor = re.compile(regex_noauthor_str)
+    dict_noauthor = {"notes_noauthor":regex_noauthor.findall(raw)}
+    
+    ## 5. Create the dictionary
+    dict_all = dict_author
+    dict_all.update(dict_noauthor)
+    
+    ## 6. Organise the dictionary
+    dict_all = organise(dict_all)
+    
+    return dict_all
+
+
 def preprocess(raw):
     """
         Basic text formatting e.g. BOM at start of file
@@ -43,12 +72,12 @@ def preprocess(raw):
     
     return raw
 
-def parse_raw(raw):
+
+def build_regexes():
     """
-        Convert Kindle clippings text file to JSON and print to JSON file
+        Create regular expressions to extract quote data.
     """
     
-    raw = preprocess(raw)
     
     ## 1. Regex parts
     title_regex = "(.+)"
@@ -60,27 +89,15 @@ def parse_raw(raw):
     ## 3. Regex date and time
     date_regex = "([a-zA-Z]+), ([a-zA-Z]+) ([0-9]+), ([0-9]+)"  # Date
     time_regex = "([0-9]+):([0-9]+) (AM|PM)"  # Time
-
+    
     ## 4. Regex quote
     content_regex = "(.*)"
     footer_regex = "=+"
-
+    
     ## 5. Regex newline
     nl_re = "\n*"
-
-    ## 6. Regex quotes with no author
-    regex_noauthor_str =\
-    title_regex + nl_re +\
-    "- Highlight " + loc_all_regex + "\| Added on " +\
-    date_regex + ", " + time_regex + nl_re +\
-    content_regex + nl_re +\
-    footer_regex
     
-    ## 7. Perform the regex for entries without an author
-    regex_noauthor = re.compile(regex_noauthor_str)
-    dict_noauthor = {"notes_noauthor":regex_noauthor.findall(raw)}
-    
-    ## 8. Regex quotes with an author
+    ## 6. Regex quotes with an author
     regex_author_str =\
     title_author_regex + nl_re +\
     "- Highlight " + loc_all_regex + "\| Added on " +\
@@ -88,19 +105,15 @@ def parse_raw(raw):
     content_regex + nl_re +\
     footer_regex
     
-    ## 9. Perform the regex for entries with an author
-    regex_author = re.compile(regex_author_str)
-    dict_author = {"notes_author":regex_author.findall(raw)}
+    ## 7. Regex quotes with no author
+    regex_noauthor_str =\
+    title_regex + nl_re +\
+    "- Highlight " + loc_all_regex + "\| Added on " +\
+    date_regex + ", " + time_regex + nl_re +\
+    content_regex + nl_re +\
+    footer_regex
     
-    ## 10. Create the dictionary
-    dict_all = dict_author
-    dict_all.update(dict_noauthor)
-    
-    ## 11. Organise the dictionary
-    dict_all = organise(dict_all)
-    
-    return dict_all
-
+    return regex_author_str,regex_noauthor_str
 
 def output(dict_all,f_out=None):
     """
