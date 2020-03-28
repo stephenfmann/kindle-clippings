@@ -9,7 +9,7 @@ def output(json_string,f_out=None):
     if f_out:
         ## Write
         with io.open(f_out,"w",encoding='utf-8') as f:
-            f.write(json_string) #sfm python 3 #.decode('unicode_escape'))
+            f.write(json_string)
             
         return
     
