@@ -50,7 +50,3 @@ My kindle is *old*. It sometimes doesn't connect to my computer for long enough 
 2. Open command prompt cmd.exe
 3. Type "E:\documents\My Clippings.txt" (or whichever drive letter your kindle is under)
 4. Save the file that opens (should open with your default text editor)
-
-## TODO
-
-+ Progress indicator

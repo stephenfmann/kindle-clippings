@@ -60,10 +60,12 @@ def parse_raw(raw):
     
     ## 3. Perform the regex for entries with an author
     regex_author = re.compile(regex_author_str)
+    progress("Regex complete ",0,2)
     dict_author = {"notes_author":regex_author.findall(raw)}
     
     ## 4. Perform the regex for entries without an author
     regex_noauthor = re.compile(regex_noauthor_str)
+    progress("Regex complete ",1,2)
     dict_noauthor = {"notes_noauthor":regex_noauthor.findall(raw)}
     
     ## 5. Create the dictionary
@@ -134,11 +136,16 @@ def organise(dict):
     dict_new = {"notes_author":{}}
     
     ## 1. Quotes with an author
+    i=0
+    total = len(dict)
     for line in dict["notes_author"]:
         
         dict_line = build_dict_line(line)
         
         dict_new = add_line_to_dict_deep(dict_new,dict_line)
+        
+        progress("Author complete: ",i,total)
+        i+=1
     
     ## 2. Quotes with no author
     for line in dict["notes_noauthor"]:
@@ -146,6 +153,9 @@ def organise(dict):
         dict_line = build_dict_line(line2)
         
         dict_new = add_line_to_dict_deep(dict_new,dict_line)
+        
+        progress("No author complete: ",i,total)
+        i+=1
     
     ## 3. Pad location keys.
     ##     See function comment text for explanation.
@@ -417,6 +427,14 @@ def pad_locs(book,loc_length):
         book_new[newkey] = value
     
     return book_new
+
+
+def progress(message,step,total):
+    """
+        Print progress.
+    """
+    
+    print(message+str(int(step*100/total))+"%", end="\r")
 
 """
     Run main
