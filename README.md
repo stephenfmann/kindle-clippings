@@ -9,7 +9,7 @@ This script converts the data in that file to JSON format, for ease of browsing.
 
 ## How to run?
 
-Python 3.6.4
+Python 3.7.3
 
 `python clippings.py [<filename>]`
 
