@@ -8,6 +8,8 @@ from time import strptime
 from datetime import datetime
 
 
+DUMMY_AUTHOR = "ZZNOAUTHOR" # Quotes with no author will be assigned this name
+
 def do_clippings():
     """
         Wrapper
@@ -212,8 +214,10 @@ def organise(dict):
     ## 2. Quotes with no author
     ## TODO
     for line in dict["notes_noauthor"]:
-        #print(line) # debug
-        break
+        line2 = (line[0],DUMMY_AUTHOR)+line[1:]
+        dict_line = build_dict_line(line2)
+        
+        dict_new = add_line_to_dict_deep(dict_new,dict_line)
     
     return dict_new
 

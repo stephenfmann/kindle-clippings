@@ -35,18 +35,10 @@ Output file is in the format:
             }
         }
     }
-    "notes_noauthor": {
-        "<title>" {
-            "<location/page>" : [
-                {
-                    "date": "YYYYMMDD-HHMM",
-                    "quote": "<quote text>"
-                }
-            ]
-        }
-    }
 }
 ```
+
+Quotes without an author are stored under the dummy author name ZZNOAUTHOR.
 
 ## How to get Kindle clippings when the connection is dodgy
 
@@ -59,6 +51,5 @@ My kindle is *old*. It sometimes doesn't connect to my computer for long enough 
 
 ## TODO
 
-+ unicode characters in quotes
++ unicode characters 
 + Pages in order with respect to single/double/triple digits
-+ notes_noauthor info
