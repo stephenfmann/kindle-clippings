@@ -15,6 +15,7 @@ def do_clippings():
         Wrapper
     """
     
+    ## 1. Get user input
     if len(sys.argv) > 1:
         f_in = sys.argv[1]          # clippings filename (should be .txt)
         if len(sys.argv) > 2:
@@ -25,16 +26,27 @@ def do_clippings():
         f_in = "in/My Clippings.txt"    # default
         f_out="out/clippings.json"       # default
     
+    ## 2. Log
     print("Extracting clippings from "+f_in)
     
+    ## 3. Get raw clippings
     with open(f_in,"r",encoding='utf-8') as f:
         raw = f.read()
     
+    ## 4. Parse into dictionary
     dict_all = parse_raw(raw)
     
+    ## 5. Organise the dictionary
+    dict_all = organise(dict_all)
+    
+    ## 6. Output the dictionary
     output(dict_all,f_out)
 
 
+"""
+    Primary functions:
+        parse_raw, organise, output
+"""
 def parse_raw(raw):
     """
         Convert Kindle clippings text file to JSON and print to JSON file
@@ -58,11 +70,114 @@ def parse_raw(raw):
     dict_all = dict_author
     dict_all.update(dict_noauthor)
     
-    ## 6. Organise the dictionary
-    dict_all = organise(dict_all)
-    
     return dict_all
 
+
+def organise(dict):
+    """
+        How do you want your JSON output organised?
+        The input looks like this:
+            {
+                notes_noauthor:     [
+                    [   <title>,
+                        Loc.|on Page,
+                        <loc or page>,
+                        <??>,
+                        <??>,
+                        <day name>,
+                        <month name>,
+                        <day number>,
+                        <year>,
+                        <hour>,
+                        <minute>,
+                        AM/PM,
+                        <quote>
+                    ],
+                    [...],[...]
+                ],
+                notes_author:       [
+                    [   <title>,
+                        <author>,
+                        Loc.|on Page,
+                        <loc or page>,
+                        <??>,
+                        <??>,
+                        <day name>,
+                        <month name>,
+                        <day number>,
+                        <year>,
+                        <hour>,
+                        <minute>,
+                        AM/PM,
+                        <quote>
+                    ],
+                    [...],[...]
+                ]
+            }
+        I want something like this:
+            {
+                notes_author:   {
+                    "Kate Chopin": {
+                        "The Awakening and Selected Short Stories": {
+                            "l1197": [
+                                {
+                                    "date": "20180405-1257",
+                                    "quote": "She had reached a stage when she seemed to be no longer feeling her way, working, when in the humor, with sureness and ease. And being devoid of ambition, and striving not toward accomplishment, she drew satisfaction from the work in itself."
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+    """
+    
+    dict_new = {"notes_author":{}}
+    
+    ## 1. Quotes with an author
+    for line in dict["notes_author"]:
+        
+        dict_line = build_dict_line(line)
+        
+        dict_new = add_line_to_dict_deep(dict_new,dict_line)
+    
+    ## 2. Quotes with no author
+    for line in dict["notes_noauthor"]:
+        line2 = (line[0],DUMMY_AUTHOR)+line[1:]
+        dict_line = build_dict_line(line2)
+        
+        dict_new = add_line_to_dict_deep(dict_new,dict_line)
+    
+    ## 3. Pad location keys.
+    ##     See function comment text for explanation.
+    dict_new = pad_location_keys(dict_new)
+    
+    return dict_new
+
+
+def output(dict_all,f_out=None):
+    """
+        Print or file write
+    """
+    if f_out:
+        with io.open(f_out,"w",encoding='utf-8') as f:
+            f.write(
+                json.dumps(
+                    dict_all,
+                    indent=4,
+                    sort_keys=True,
+                    ensure_ascii=False  # unicode characters
+                )
+            ) # convert dictionary to string and output
+            
+        print("Output JSON to "+f_out)
+        return
+    
+    print(json_string)
+
+
+"""
+    Helper functions
+"""
 
 def preprocess(raw):
     """
@@ -130,98 +245,6 @@ def build_regexes():
     return regex_author_str,regex_noauthor_str
 
 
-def output(dict_all,f_out=None):
-    """
-        Print or file write
-    """
-    if f_out:
-        with io.open(f_out,"w",encoding='utf-8') as f:
-            f.write(json.dumps(dict_all, indent=4, sort_keys=True)) # convert dictionary to string and output
-            
-        print("Output JSON to "+f_out)
-        return
-    
-    print(json_string)
-
-
-def organise(dict):
-    """
-        How do you want your JSON output organised?
-        The input looks like this:
-            {
-                notes_noauthor:     [
-                    [   <title>,
-                        Loc.|on Page,
-                        <loc or page>,
-                        <??>,
-                        <??>,
-                        <day name>,
-                        <month name>,
-                        <day number>,
-                        <year>,
-                        <hour>,
-                        <minute>,
-                        AM/PM,
-                        <quote>
-                    ],
-                    [...],[...]
-                ],
-                notes_author:       [
-                    [   <title>,
-                        <author>,
-                        Loc.|on Page,
-                        <loc or page>,
-                        <??>,
-                        <??>,
-                        <day name>,
-                        <month name>,
-                        <day number>,
-                        <year>,
-                        <hour>,
-                        <minute>,
-                        AM/PM,
-                        <quote>
-                    ],
-                    [...],[...]
-                ]
-            }
-        I want something like this:
-            {
-                notes_author:   {
-                    "Kate Chopin": {
-                        "The Awakening and Selected Short Stories": {
-                            "l1197": [
-                                {
-                                    "date": "20180405-1257",
-                                    "quote": "She had reached a stage when she seemed to be no longer feeling her way, working, when in the humor, with sureness and ease. And being devoid of ambition, and striving not toward accomplishment, she drew satisfaction from the work in itself."
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-    """
-    
-    dict_new = {"notes_author":{},"notes_noauthor":{}}
-    
-    ## 1. Quotes with an author
-    for line in dict["notes_author"]:
-        
-        dict_line = build_dict_line(line)
-        
-        dict_new = add_line_to_dict_deep(dict_new,dict_line)
-    
-    ## 2. Quotes with no author
-    ## TODO
-    for line in dict["notes_noauthor"]:
-        line2 = (line[0],DUMMY_AUTHOR)+line[1:]
-        dict_line = build_dict_line(line2)
-        
-        dict_new = add_line_to_dict_deep(dict_new,dict_line)
-    
-    return dict_new
-
-
 def build_dict_line(line):
     """
         Convert the line to the new format.
@@ -285,9 +308,9 @@ def build_dict_line(line):
     
     loc = loc + str(line[3]) # combine location prefix with location.
     
-    ## 4. Quote formatting
-    ## TODO - lots of weird unicode stuff e.g. \u2014
-    quote = line[13].replace('"','\\"')
+    ## 4. Quote
+    ##  Add formatting here if necessary.
+    quote = line[13]
     
     
     ## 5. Build line.
@@ -311,7 +334,7 @@ def add_line_to_dict_deep(dict,line):
                 "John Updike": {
                     "Rabbit, Run": {
                         "l4467": [{
-                                "date": "TODO",
+                                "date": "20171011-2249",
                                 "quote": "Two thoughts comfort him, let a little light through the dense pack of impossible alternatives. Ruth has parents, and she will let his baby live: two thoughts that are perhaps the same thought, the vertical order of parenthood, a kind of thin tube upright in time in which our solitude is somewhat diluted."
                             }
                         ]
@@ -349,5 +372,54 @@ def add_line_to_dict_deep(dict,line):
     return dict
 
 
+def pad_location_keys(dict_new):
+    """
+        Multiple locations for the same book may have different lengths,
+         which affects the correct ordering of quotes.
+        For example, "l163" should be earlier than "l1466", but JSON puts the latter first.
+        To fix this, we need to get the max length of location keys for each publication,
+         and pad all of that publication's location keys that are shorter 
+         with leading zeros after the initial letter.
+    """
+    
+    for books in dict_new["notes_author"].values():
+        for key,book in books.items():
+            loc_length = longest_loc_length(book)
+            book_new = pad_locs(book,loc_length)
+            books[key] = book_new # can I do this within a loop??
+    return dict_new
+
+
+def longest_loc_length(book):
+    """
+        Return the length of the longest location key string.
+    """
+    
+    loc_length = 0
+    for loc_string in book.keys():
+        if len(loc_string) > loc_length: loc_length = len(loc_string)
+    
+    return loc_length
+
+
+def pad_locs(book,loc_length):
+    """
+        Pad location keys as necessary
+    """
+    
+    book_new = {}
+    for key,value in book.items():
+        pad = loc_length - len(key) # how much we need to pad
+        newkey=key
+        while pad > 0:
+            newkey = newkey[0] + "0" + newkey[1:]
+            pad-=1
+        book_new[newkey] = value
+    
+    return book_new
+
+"""
+    Run main
+"""
 if __name__ == "__main__":
     do_clippings()

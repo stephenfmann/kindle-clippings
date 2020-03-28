@@ -38,6 +38,8 @@ Output file is in the format:
 }
 ```
 
+Double quote marks within a quote are prefaced with a backslash \, otherwise the JSON would be invalid.
+
 Quotes without an author are stored under the dummy author name ZZNOAUTHOR.
 
 ## How to get Kindle clippings when the connection is dodgy
@@ -51,5 +53,4 @@ My kindle is *old*. It sometimes doesn't connect to my computer for long enough 
 
 ## TODO
 
-+ unicode characters 
-+ Pages in order with respect to single/double/triple digits
++ Progress indicator
