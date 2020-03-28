@@ -21,10 +21,34 @@ def do_clippings(f_in,f_out="out/clippings.json"):
     output(dict_all,f_out)
 
 
+def preprocess(raw):
+    """
+        Basic text formatting e.g. BOM at start of file
+    """
+    
+    
+    ## 1. Remove byte order marks if necessary
+    
+    if raw[0]=='\ufeff':
+        raw = raw[1:]
+    
+    # if raw[0] == '\xef':
+        # raw = raw[1:]
+
+    # if raw[0] == '\xbb':
+        # raw = raw[1:]
+
+    # if raw[0] == '\xbf':
+        # raw = raw[1:]
+    
+    return raw
+
 def parse_raw(raw):
     """
         Convert Kindle clippings text file to JSON and print to JSON file
     """
+    
+    raw = preprocess(raw)
     
     ## 1. Regex parts
     title_regex = "(.+)"
@@ -156,6 +180,9 @@ def organise(dict):
     
     ## 2. Quotes with no author
     ## TODO
+    for line in dict["notes_noauthor"]:
+        print(line) # debug
+        break
     
     return dict_new
 
