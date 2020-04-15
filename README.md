@@ -13,11 +13,11 @@ Python 3.7.3
 
 `python clippings.py [<input filename> <output filename>]`
 
-If you do not supply <input filename>, the script defaults to "in/My Clippings.txt" which assumes you have a directory called "in" inside the directory where you put clippings.py.
+If you do not supply \<input filename\>, the script defaults to "in/My Clippings.txt" which assumes you have a directory called "in" inside the directory where you put clippings.py.
 
-If you do not supply <output filename>, the script defaults to "out/clippings.json" which assumes you have a directory called "out" inside the directory where you put clippings.py.
+If you do not supply \<output filename\>, the script defaults to "out/clippings.json" which assumes you have a directory called "out" inside the directory where you put clippings.py.
 
-**Warning!** The script will overwrite <output filename> without warning.
+**Warning!** The script will overwrite \<output filename\> without warning.
 
 Output file is in the format:
 
