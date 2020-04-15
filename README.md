@@ -23,16 +23,14 @@ Output file is in the format:
 
 ```json
 {
-    "notes_author": {
-        "<author>": {
-            "<title>" {
-                "<location/page>" : [
-                    {
-                        "date": "YYYYMMDD-HHMM",
-                        "quote": "<quote text>"
-                    }
-                ]
-            }
+    "<author>": {
+        "<title>" {
+            "<location/page>" : [
+                {
+                    "date": "YYYYMMDD-HHMM",
+                    "quote": "<quote text>"
+                }
+            ]
         }
     }
 }
@@ -54,3 +52,4 @@ My kindle is *old*. It sometimes doesn't connect to my computer for long enough 
 ## TODO
 
 + Translation key for faulty authors/titles
++ Insert external quotes
