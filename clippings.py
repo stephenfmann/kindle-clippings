@@ -3,12 +3,23 @@
     Take a Kindle clippings .txt file and convert to JSON; output as .json file
 """
 
-import re, json, sys, io
+import re, json, sys, io, argparse
 from time import strptime
 from datetime import datetime
 
 
 DUMMY_AUTHOR = "zznoauthor" # Lower case to ensure it goes at the end.
+
+DEFAULT_IN = "in/My Clippings.txt"      # clippings file
+DEFAULT_OUT = "out/clippings.json"      # output file
+DEFAULT_SUB = "in/subs.json"            # substitute authors/titles
+DEFAULT_COMBINE = "in/combine.json"     # existing quotes to combine with output
+
+PROG_USAGE = 'python clippings.py '+\
+        '[-i <input.txt>] '+\
+        '[-o <output.json>] '+\
+        '[-s [<substitute_file.json>]] '+\
+        '[-c [<combine_file.json>]]'
 
 def do_clippings():
     """
@@ -16,22 +27,16 @@ def do_clippings():
     """
     
     ## 1. Get user input
-    if len(sys.argv) > 1:
-        f_in = sys.argv[1]          # clippings filename (should be .txt)
-        if len(sys.argv) > 2:
-            f_out = sys.argv[2]     # output filename (should be .json)
-        else:
-            f_out="out/clippings.json"
-    else:
-        f_in = "in/My Clippings.txt"    # default
-        f_out="out/clippings.json"       # default
+    f_in,f_out,f_substitute,f_combine = parse_arguments()
     
     ## 2. Log
-    print("Extracting clippings from "+f_in)
+    print("Extracting clippings from "+f_in.name)
     
     ## 3. Get raw clippings
-    with open(f_in,"r",encoding='utf-8') as f:
-        raw = f.read()
+    #with open(f_in,"r",encoding='utf-8') as f:
+    #    raw = f.read()
+    raw = f_in.read()
+    f_in.close()
     
     ## 4. Parse into dictionary
     dict_all = parse_raw(raw)
@@ -39,8 +44,64 @@ def do_clippings():
     ## 5. Organise the dictionary
     dict_all = organise(dict_all)
     
-    ## 6. Output the dictionary
+    ## 6. Make substitutions if necessary
+    if f_substitute:
+        dict_all = substitute(dict_all,f_substitute)
+    
+    ## 7. Combine if necessary
+    if f_combine:
+        dict_all = combine(dict_all,f_combine)
+    
+    ## 8. Output the dictionary
     output(dict_all,f_out)
+
+def parse_arguments():
+    """
+        Controls how the script deals with command-line arguments.
+    """
+    
+    parser = argparse.ArgumentParser( # See https://docs.python.org/3.7/library/argparse.html
+                description='Convert Kindle clippings to JSON format.',
+                usage=PROG_USAGE)
+    
+    parser.add_argument( 
+            '-i',
+            nargs='?', # expects one argument after -i
+            const=DEFAULT_IN, # default if -i is provided but no file specified
+            default=DEFAULT_IN, # default if -i is not provided
+            help='TXT file of Kindle clippings. See README.md.',
+            type=argparse.FileType('r',encoding="utf-8") # expect a filename
+            )
+    
+    parser.add_argument( 
+            '-o',
+            nargs='?', # expects one argument after -o
+            const=DEFAULT_OUT, # default if -o is provided but no file specified
+            default=DEFAULT_OUT, # default if -o is not provided
+            help='JSON file for output. See README.md for format.',
+            type=argparse.FileType('w',encoding="utf-8") # expect a filename
+            )
+    
+    parser.add_argument(
+            '-s',
+            nargs='?', # expects one argument after -s
+            const=DEFAULT_SUB, # default if -s is provided but no file specified
+            default=None, # default if -s is not provided
+            help='JSON file specifying author/title substitutions. See README.md for correct format.',
+            type=argparse.FileType('r',encoding="utf-8") # expect a filename
+            )
+    
+    parser.add_argument(
+            '-c',
+            nargs='?', # expects one argument after -c
+            const=DEFAULT_COMBINE, # default if -c is provided but no file specified
+            default=None, # default if -c is not provided
+            help='JSON file specifying existing quotations to combine. See README.md for correct format.',
+            type=argparse.FileType('r',encoding="utf-8") # expect a filename
+            )
+    
+    args = parser.parse_args()
+    return args.i, args.o, args.s, args.c
 
 
 """
@@ -161,26 +222,77 @@ def organise(dict):
     
     return dict_new
 
+def substitute(dict_all, f_substitute):
+    """
+        Substitute errant authors/titles with the correct ones.
+        Subs file should be a list of objects with form:
+            {
+                "old":  {
+                    "author":   "Batchie",
+                    "title":    "Jose_Saramago_Seeing__"
+                "new":  {
+                    "author_new":   "José Saramago",
+                    "title_new":    "Seeing"
+                }
+            }
+    """
+    
+    print("Substituting features from "+f_substitute.name)
+
+    dict_subs = json.loads(f_substitute.read())
+    f_substitute.close()
+    
+    for entry in dict_subs:
+        author = entry["old"]["author"]
+        title = entry["old"]["title"]
+        author_new = entry["new"]["author"]
+        title_new = entry["new"]["title"]
+        
+        ## Create new entry
+        line={author_new:{title_new:dict_all[author][title]}}
+        add_line_to_dict_deep(dict_all,line)
+        
+        ## Delete old entry
+        del dict_all[author][title]
+        
+        ## Delete old author if empty
+        if len(dict_all[author]) < 1:
+            del dict_all[author]
+    
+    return dict_all
+
+def combine(dict_all, f_combine):
+    """
+        Combine quotes from file f_combine into dict_all.
+    """
+    
+    ## TODO
+    pass
+
+    return dict_all
 
 def output(dict_all,f_out=None):
     """
         Print or file write
     """
+    
     if f_out:
-        with io.open(f_out,"w",encoding='utf-8') as f:
-            f.write(
-                json.dumps(
+        #with io.open(f_out,"w",encoding='utf-8') as f:
+        #    f.write(
+        f_out.write( 
+                json.dumps(     # convert dictionary to string and output
                     dict_all,
                     indent=4,
                     sort_keys=True,
                     ensure_ascii=False  # unicode characters
                 )
-            ) # convert dictionary to string and output
+            ) 
             
-        print("Output JSON to "+f_out)
+        print("Output JSON to "+f_out.name)
         return
     
-    print(json_string)
+    ## Else, output to STDOUT
+    print(json.dumps(dict_all))
 
 
 """
@@ -335,7 +447,7 @@ def build_dict_line(line):
     return dict_line
 
 
-def add_line_to_dict_deep(dict,line):
+def add_line_to_dict_deep(d,line):
     """
         The dict looks like:
             {
@@ -359,25 +471,25 @@ def add_line_to_dict_deep(dict,line):
     location    = list(line[author][title].keys())[0]
     
     
-    if author not in dict:
+    if author not in d:
         ## 2. Author not yet added.
-        dict.update(line)
-        return dict
+        d.update(line)
+        return d
     
-    if title not in dict[author]:
+    if title not in d[author]:
         ## 3. Title not yet added.
-        dict[author].update(line[author])
-        return dict
+        d[author].update(line[author])
+        return d
         
-    if location not in dict[author][title]:
+    if location not in d[author][title]:
         ## 4. Location not yet added. 
-        dict[author][title].update(line[author][title])
-        return dict
+        d[author][title].update(line[author][title])
+        return d
     
     ## 5. The location is already there (should be impossible for Locs, rare for Pages)
     ## Just need to add the entry
-    dict[author][title][location] += line[author][title][location]
-    return dict
+    d[author][title][location] += line[author][title][location]
+    return d
 
 
 def pad_location_keys(dict_new):
