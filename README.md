@@ -11,7 +11,7 @@ This script converts the data in that file to JSON format, for ease of browsing.
 
 Python 3.7.3
 
-`python clippings.py [<input filename> <output filename>]`
+`python clippings.py [-i <input filename> -o <output filename>]`
 
 If you do not supply \<input filename\>, the script defaults to "in/My Clippings.txt" which assumes you have a directory called "in" inside the directory where you put clippings.py.
 
@@ -27,7 +27,7 @@ Output file is in the format:
         "<title>" {
             "<location/page>" : [
                 {
-                    "date": "YYYYMMDD-HHMM",
+                    "date": "YYYY-MM-DDTHH:MM",
                     "quote": "<quote text>"
                 }
             ]

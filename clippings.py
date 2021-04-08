@@ -438,7 +438,7 @@ def build_dict_line(line):
         author:{
             line[0]:{ # title
                 loc:[
-                    {"quote":quote,"date":date.strftime("%Y%m%d-%H%M")}
+                    {"quote":quote,"date":date.strftime("%Y-%m-%dT%H:%M")}
                 ]
             }
         }
