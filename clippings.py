@@ -6,6 +6,7 @@
 import re, json, sys, io, argparse
 from time import strptime
 from datetime import datetime
+from dateutil.tz import tzlocal
 
 
 DUMMY_AUTHOR = "zznoauthor" # Lower case to ensure it goes at the end.
@@ -14,12 +15,14 @@ DEFAULT_IN = "in/My Clippings.txt"      # clippings file
 DEFAULT_OUT = "out/clippings.json"      # output file
 DEFAULT_SUB = "in/subs.json"            # substitute authors/titles
 DEFAULT_COMBINE = "in/combine.json"     # existing quotes to combine with output
+DEFAULT_TIMEZONE = tzlocal()            # timezone for quote timestamps: note this assumes the system timezone because the kindle doesn't store this information
 
 PROG_USAGE = 'python clippings.py '+\
         '[-i <input.txt>] '+\
         '[-o <output.json>] '+\
         '[-s [<substitute_file.json>]] '+\
-        '[-c [<combine_file.json>]]'
+        '[-c [<combine_file.json>]] ' +\
+        '[-z]'
 
 def do_clippings():
     """
@@ -27,7 +30,7 @@ def do_clippings():
     """
     
     ## 1. Get user input
-    f_in,f_out,f_substitute,f_combine = parse_arguments()
+    f_in,f_out,f_substitute,f_combine, f_timezone = parse_arguments()
     
     ## 2. Log
     print("Extracting clippings from "+f_in.name)
@@ -42,7 +45,7 @@ def do_clippings():
     dict_all = parse_raw(raw)
     
     ## 5. Organise the dictionary
-    dict_all = organise(dict_all)
+    dict_all = organise(dict_all,f_timezone)
     
     ## 6. Make substitutions if necessary
     if f_substitute:
@@ -64,6 +67,7 @@ def parse_arguments():
                 description='Convert Kindle clippings to JSON format.',
                 usage=PROG_USAGE)
     
+    ## Is there an input filepath specified manually?
     parser.add_argument( 
             '-i',
             nargs='?', # expects one argument after -i
@@ -73,6 +77,7 @@ def parse_arguments():
             type=argparse.FileType('r',encoding="utf-8") # expect a filename
             )
     
+    ## Is there an output filepath specified manually?
     parser.add_argument( 
             '-o',
             nargs='?', # expects one argument after -o
@@ -82,6 +87,7 @@ def parse_arguments():
             type=argparse.FileType('w',encoding="utf-8") # expect a filename
             )
     
+    ## Are we substituting author/book titles?
     parser.add_argument(
             '-s',
             nargs='?', # expects one argument after -s
@@ -91,6 +97,7 @@ def parse_arguments():
             type=argparse.FileType('r',encoding="utf-8") # expect a filename
             )
     
+    ## Are we combining quotes from an external file?
     parser.add_argument(
             '-c',
             nargs='?', # expects one argument after -c
@@ -99,9 +106,15 @@ def parse_arguments():
             help='JSON file specifying existing quotations to combine. See README.md for correct format.',
             type=argparse.FileType('r',encoding="utf-8") # expect a filename
             )
+            
+    ## Are we assigning the user's local timezone to timestamps?
+    parser.add_argument('-z', action='store_true',help="Flag: if set, the user's current timezone will be added to all timestamps.")
     
     args = parser.parse_args()
-    return args.i, args.o, args.s, args.c
+    
+    if args.z: args.z = DEFAULT_TIMEZONE # if the flag was set, switch to timezone
+    
+    return args.i, args.o, args.s, args.c, args.z
 
 
 """
@@ -136,7 +149,7 @@ def parse_raw(raw):
     return dict_all
 
 
-def organise(dict):
+def organise(dict,f_timezone=None):
     """
         How do you want your JSON output organised?
         The input looks like this:
@@ -199,7 +212,7 @@ def organise(dict):
     total = len(dict["notes_author"]) + len(dict["notes_noauthor"])
     for line in dict["notes_author"]:
         
-        dict_line = build_dict_line(line)
+        dict_line = build_dict_line(line,f_timezone)
         
         dict_new = add_line_to_dict_deep(dict_new,dict_line)
         
@@ -209,7 +222,7 @@ def organise(dict):
     ## 2. Quotes with no author
     for line in dict["notes_noauthor"]:
         line2 = (line[0],DUMMY_AUTHOR)+line[1:]
-        dict_line = build_dict_line(line2)
+        dict_line = build_dict_line(line2,f_timezone)
         
         dict_new = add_line_to_dict_deep(dict_new,dict_line)
         
@@ -365,7 +378,7 @@ def build_regexes():
     return regex_author_str,regex_noauthor_str
 
 
-def build_dict_line(line):
+def build_dict_line(line,f_timezone=None):
     """
         Convert the line to the new format.
         The current order is:
@@ -398,7 +411,11 @@ def build_dict_line(line):
             }
     """
     
-    ## 1. Timestamp
+    ## 1. Quote
+    ##  Add formatting here if necessary.
+    quote = line[13]
+    
+    ## 2. Timestamp
     # # line[9] 
     # # line[7] 
     # # line[8] 
@@ -412,11 +429,13 @@ def build_dict_line(line):
     if line[12] == "PM":                            # fix for 24 hour clock
         hour = (hour + 12) % 24
     minute = int(line[11])                          # minute
-    date = datetime(year,month,day,hour,minute)     # full date
     
-    ## 2. Author format
-    author = line[1]
-    author = author.replace('\\','') # Remove backslashes
+    ## Quote object is quote with timestamp.
+    ## Timestamp might have a timezone assigned, or might be naive.
+    if f_timezone:
+        date = datetime(year,month,day,hour,minute,tzinfo=f_timezone)     # full date, with timezone
+    else:
+        date = datetime(year,month,day,hour,minute)     # full date, naive
     
     ## 3. Page/location format
     if line[2] == "on Page":
@@ -425,20 +444,21 @@ def build_dict_line(line):
         loc = "l"
     else:
         loc = ""
-    
+        
     loc = loc + str(line[3]) # combine location prefix with location.
     
-    ## 4. Quote
-    ##  Add formatting here if necessary.
-    quote = line[13]
-    
+    ## 4. Author format
+    author = line[1]
+    author = author.replace('\\','') # Remove backslashes
     
     ## 5. Build line.
+    ## Timestamp will ignore the "%z" part of the format declaration
+    ##  if no timezone has been assigned.
     dict_line = {
         author:{
             line[0]:{ # title
                 loc:[
-                    {"quote":quote,"date":date.strftime("%Y-%m-%dT%H:%M")}
+                    {"quote":quote,"date":date.strftime("%Y-%m-%dT%H:%M%z")}
                 ]
             }
         }
